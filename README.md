@@ -64,12 +64,6 @@ The .exe will be in the `dist` folder!
 4. **Set Download Location**: Choose where to save the file
 5. **Click Download**: Sit back and watch the progress!
 
-## Important Notes
-
-- **FFmpeg Required**: Audio conversion needs FFmpeg installed
-- **Respect Copyright**: Only download content you have rights to
-- **Platform Changes**: Some sites may block downloads occasionally
-- **Internet Required**: Obviously!
 
 ## Troubleshooting
 

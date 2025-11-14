@@ -14,7 +14,10 @@ if `python` is not on PATH, replace `python` with full path to the Python execut
 
 param(
     [switch]$InstallDeps,
-    [switch]$OneDir
+    [switch]$OneDir,
+    [switch]$IncludeFFmpeg,
+    [string]$FFmpegPath = "",
+    [switch]$Clean
 )
 
 # Make sure we're in the script folder
@@ -31,6 +34,11 @@ if ($InstallDeps) {
 $exeName = "MediaFetch"
 $icon = "icon.ico"
 
+if ($Clean) {
+    Write-Host "Cleaning build and dist folders..." -ForegroundColor Yellow
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue -Path .\build, .\dist, .\__pycache__
+}
+
 if ($OneDir) {
     $mode = "--onedir"
     Write-Host "Building in development mode (--onedir) for faster builds." -ForegroundColor Yellow
@@ -38,10 +46,35 @@ if ($OneDir) {
     $mode = "--onefile"
 }
 
-$specArgs = "$mode --windowed --name `"$exeName`" --icon=$icon main.py"
+$addBinaryArg = ""
+if ($IncludeFFmpeg) {
+    # Determine ffmpeg path: use provided, else try common local paths
+    if ([string]::IsNullOrEmpty($FFmpegPath)) {
+        $cand1 = Join-Path -Path (Get-Location) -ChildPath "ffmpeg.exe"
+        $cand2 = Join-Path -Path (Get-Location) -ChildPath "ffmpeg\bin\ffmpeg.exe"
+        $cand3 = Join-Path -Path (Get-Location) -ChildPath "bin\ffmpeg.exe"
+        if (Test-Path $cand1) { $FFmpegPath = $cand1 }
+        elseif (Test-Path $cand2) { $FFmpegPath = $cand2 }
+        elseif (Test-Path $cand3) { $FFmpegPath = $cand3 }
+    }
+
+    if (-not [string]::IsNullOrEmpty($FFmpegPath) -and (Test-Path $FFmpegPath)) {
+        # PyInstaller expects a <SRC;DEST> pair, use '.' as dest to put next to exe
+        $addBinaryArg = "--add-binary `"$FFmpegPath;.`" 
+        Write-Host "Including FFmpeg from: $FFmpegPath" -ForegroundColor Green
+    } else {
+        Write-Host "Warning: FFmpeg include requested but ffmpeg.exe not found. Skipping include." -ForegroundColor Yellow
+    }
+}
+
+$specArgs = "$mode --windowed --name `"$exeName`" --icon=$icon $addBinaryArg main.py"
 
 Write-Host "Running PyInstaller (module invocation) with args: $specArgs" -ForegroundColor Cyan
-python -m PyInstaller $mode --windowed --name "$exeName" --icon=$icon main.py
+if (-not [string]::IsNullOrEmpty($addBinaryArg)) {
+    python -m PyInstaller $mode --windowed --name "$exeName" --icon=$icon $addBinaryArg main.py
+} else {
+    python -m PyInstaller $mode --windowed --name "$exeName" --icon=$icon main.py
+}
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Build completed. EXE is in the 'dist' folder." -ForegroundColor Green
