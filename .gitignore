@@ -21,7 +21,7 @@ wheels/
 MediaFetch.spec
 build-installer.ps1
 build.ps1
-dist/
+/dist/
 MediaFetchInstaller.iss
 
 # Virtual Environment

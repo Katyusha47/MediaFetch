@@ -60,8 +60,9 @@ if ($IncludeFFmpeg) {
 
     if (-not [string]::IsNullOrEmpty($FFmpegPath) -and (Test-Path $FFmpegPath)) {
         # PyInstaller expects a <SRC;DEST> pair, use '.' as dest to put next to exe
-        $addBinaryArg = "--add-binary `"$FFmpegPath;.`" 
-        Write-Host "Including FFmpeg from: $FFmpegPath" -ForegroundColor Green
+        # Build the add-binary argument with concatenation to avoid escaping issues
+        $addBinaryArg = '--add-binary "' + $FFmpegPath + ';."'
+        Write-Host ("Including FFmpeg from: {0}" -f $FFmpegPath) -ForegroundColor Green
     } else {
         Write-Host "Warning: FFmpeg include requested but ffmpeg.exe not found. Skipping include." -ForegroundColor Yellow
     }
