@@ -8,7 +8,11 @@ A modern, sleek desktop application to download videos and audio from ANY platfo
 - **Multiple Formats**: MP4, MKV, MP3, FLAC, WAV, M4A
 - **Quality Options**: Best, 1080p, 720p, 480p, 360p
 
-## Quick Start
+## Quick start
+
+Download the installer on the release page, and then just follow the further instructions.
+
+## How to contribute
 
 ### 1. Install Dependencies
 
@@ -39,8 +43,6 @@ winget install ffmpeg
 ```bash
 python main.py
 ```
-Or just run the .exe file.
-The .exe will be in the `dist` folder!
 
 ## Supported Platforms
 
