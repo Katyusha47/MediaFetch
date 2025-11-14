@@ -12,7 +12,6 @@ eggs/
 lib/
 lib64/
 parts/
-dist/
 sdist/
 var/
 wheels/
@@ -20,6 +19,10 @@ wheels/
 .installed.cfg
 *.egg
 MediaFetch.spec
+build-installer.ps1
+build.ps1
+dist/
+MediaFetchInstaller.iss
 
 # Virtual Environment
 venv/
