@@ -23,6 +23,7 @@ build-installer.ps1
 build.ps1
 /dist/
 MediaFetchInstaller.iss
+/installer/
 
 # Virtual Environment
 venv/
