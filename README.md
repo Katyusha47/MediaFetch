@@ -1,10 +1,12 @@
 # <h1 align="center">MediaFetch</h1>
 
 <p align="center">
-	<img src="skrinsut.PNG" alt="MediaFetch screenshot" style="max-width:100%;height:auto;" />
+	<img src="skrinsut.PNG" alt="MediaFetch screenshot" style="max-width:75%;height:auto;" />
 </p>
 
-A modern, sleek desktop application to download videos and audio from ANY platform!
+A modern, sleek desktop application to download videos and audio from hundreds of websites and streaming services.
+It supports single links, playlists and batch downloads, offers selectable quality options, subtitle and thumbnail extraction, and built-in audio conversion via FFmpeg (MP3, FLAC, WAV and more).
+Designed to be fast, reliable and easy to use for both casual users and power users.
 
 ## Features
 
