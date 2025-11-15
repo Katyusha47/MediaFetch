@@ -83,18 +83,6 @@ pip install customtkinter
 **App freezes during download**
 - This shouldn't happen! The app uses threading to keep UI responsive
 
-## Future Features
-
-- [x] Batch download (multiple URLs)
-- [x] Playlist support (yt-dlp supported)
-- [x] Subtitle download (choose language)
-- [x] Thumbnail extraction (optional)
-- [x] Auto-update checker (checks GitHub releases)
-- [x] Download history (saved at `~/.mediafetch_history.json`)
-- [x] Themes (light/dark mode toggle)
-
-Use the app UI to paste multiple URLs (one per line), toggle subtitles or thumbnail extraction, view your download history, and check for updates from the Help area.
-
 ## License
 
 MIT License - Do whatever you want with it!
