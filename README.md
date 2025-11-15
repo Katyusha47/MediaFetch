@@ -10,7 +10,7 @@ A modern, sleek desktop application to download videos and audio from ANY platfo
 
 ## Quick start
 
-Download the installer on the release page, and then just follow the further instructions.
+Download the installer on the release page [here](https://github.com/Katyusha47/MediaFetch/releases), and then just follow the further instructions.
 
 ## How to run the project
 
