@@ -1,4 +1,8 @@
-# MediaFetch
+# <h1 align="center">MediaFetch</h1>
+
+<p align="center">
+	<img src="skrinsut.PNG" alt="MediaFetch screenshot" style="max-width:100%;height:auto;" />
+</p>
 
 A modern, sleek desktop application to download videos and audio from ANY platform!
 
