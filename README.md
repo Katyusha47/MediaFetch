@@ -12,7 +12,7 @@ A modern, sleek desktop application to download videos and audio from ANY platfo
 
 Download the installer on the release page, and then just follow the further instructions.
 
-## How to contribute
+## How to run the project
 
 ### 1. Install Dependencies
 
@@ -85,14 +85,15 @@ pip install customtkinter
 
 ## Future Features
 
-- [ ] Batch download (multiple URLs)
-- [ ] Playlist support
-- [ ] Subtitle download
-- [ ] Thumbnail extraction
-- [ ] Video trimming/editing
-- [ ] Auto-update checker
-- [ ] Download history
-- [ ] Themes (light mode)
+- [x] Batch download (multiple URLs)
+- [x] Playlist support (yt-dlp supported)
+- [x] Subtitle download (choose language)
+- [x] Thumbnail extraction (optional)
+- [x] Auto-update checker (checks GitHub releases)
+- [x] Download history (saved at `~/.mediafetch_history.json`)
+- [x] Themes (light/dark mode toggle)
+
+Use the app UI to paste multiple URLs (one per line), toggle subtitles or thumbnail extraction, view your download history, and check for updates from the Help area.
 
 ## License
 

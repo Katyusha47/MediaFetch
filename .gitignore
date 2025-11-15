@@ -24,6 +24,7 @@ build.ps1
 /dist/
 MediaFetchInstaller.iss
 /installer/
+prepare-release.ps1
 
 # Virtual Environment
 venv/
