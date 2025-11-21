@@ -9,9 +9,11 @@ import json
 import time
 import urllib.request
 import urllib.error
+from PIL import Image, ImageTk
+import io
 
 # App version
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 # Accent color: try to derive from `icon.ico` if available, else fallback
 def _hex_from_rgb(rgb):
     return '#{:02x}{:02x}{:02x}'.format(*rgb)
@@ -54,6 +56,11 @@ class DownloaderApp(ctk.CTk):
         self.history_path = Path.home() / ".mediafetch_history.json"
         self.config = self.load_config()
         
+        # Preview state
+        self.current_media_info = None
+        self.preview_visible = False
+        self.is_searching = False
+        
         # Setup UI
         self.setup_ui()
         
@@ -62,8 +69,8 @@ class DownloaderApp(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
-        # Main frame
-        main_frame = ctk.CTkFrame(self, corner_radius=0)
+        # Main scrollable frame
+        main_frame = ctk.CTkScrollableFrame(self, corner_radius=0, fg_color="transparent")
         main_frame.grid(row=0, column=0, sticky="nsew", padx=20, pady=20)
         main_frame.grid_columnconfigure(0, weight=1)
         
@@ -91,13 +98,19 @@ class DownloaderApp(ctk.CTk):
         )
         url_label.grid(row=2, column=0, pady=(10, 5), sticky="w", padx=20)
 
+        # Container for URL input + Search button
+        url_container = ctk.CTkFrame(main_frame, fg_color="transparent")
+        url_container.grid(row=3, column=0, pady=(0, 20), sticky="ew", padx=20)
+        url_container.grid_columnconfigure(0, weight=1)
+
         # Multiline textbox for batch URLs (one per line)
         self.url_text = ctk.CTkTextbox(
-            main_frame,
+            url_container,
             height=90,
             font=ctk.CTkFont(size=13)
         )
-        self.url_text.grid(row=3, column=0, pady=(0, 20), sticky="ew", padx=20)
+        self.url_text.grid(row=0, column=0, sticky="ew", padx=(0, 10))
+        
         # Placeholder behavior (CTkTextbox doesn't have native placeholder)
         self.url_placeholder = "Paste one or more URLs (one per line)"
         self.url_placeholder_active = True
@@ -110,9 +123,74 @@ class DownloaderApp(ctk.CTk):
         self.url_text.bind('<FocusIn>', self._on_url_focus_in)
         self.url_text.bind('<FocusOut>', self._on_url_focus_out)
         
+        # Search URL button
+        self.search_btn = ctk.CTkButton(
+            url_container,
+            text="🔍 Search",
+            width=100,
+            height=90,
+            command=self.search_url,
+            font=ctk.CTkFont(size=14, weight="bold"),
+            fg_color=ACCENT_COLOR,
+            hover_color=HOVER_COLOR
+        )
+        self.search_btn.grid(row=0, column=1, sticky="ns")
+        
+        # Preview Panel (hidden by default)
+        self.preview_frame = ctk.CTkFrame(main_frame)
+        self.preview_frame.grid(row=4, column=0, pady=(0, 20), sticky="ew", padx=20)
+        self.preview_frame.grid_columnconfigure(1, weight=1)
+        self.preview_frame.grid_remove()  # Hide initially
+        
+        # Thumbnail placeholder
+        self.thumbnail_label = ctk.CTkLabel(
+            self.preview_frame,
+            text="",
+            width=160,
+            height=90
+        )
+        self.thumbnail_label.grid(row=0, column=0, rowspan=5, padx=15, pady=15, sticky="nw")
+        
+        # Media info labels
+        self.title_label = ctk.CTkLabel(
+            self.preview_frame,
+            text="",
+            font=ctk.CTkFont(size=14, weight="bold"),
+            anchor="w",
+            wraplength=500
+        )
+        self.title_label.grid(row=0, column=1, sticky="w", padx=(0, 15), pady=(15, 5))
+        
+        self.duration_label = ctk.CTkLabel(
+            self.preview_frame,
+            text="",
+            font=ctk.CTkFont(size=11),
+            anchor="w",
+            text_color="gray"
+        )
+        self.duration_label.grid(row=1, column=1, sticky="w", padx=(0, 15), pady=2)
+        
+        self.uploader_label = ctk.CTkLabel(
+            self.preview_frame,
+            text="",
+            font=ctk.CTkFont(size=11),
+            anchor="w",
+            text_color="gray"
+        )
+        self.uploader_label.grid(row=2, column=1, sticky="w", padx=(0, 15), pady=2)
+        
+        self.views_label = ctk.CTkLabel(
+            self.preview_frame,
+            text="",
+            font=ctk.CTkFont(size=11),
+            anchor="w",
+            text_color="gray"
+        )
+        self.views_label.grid(row=3, column=1, sticky="w", padx=(0, 15), pady=(2, 15))
+        
         # Options Frame
         options_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        options_frame.grid(row=4, column=0, pady=(0, 20), sticky="ew", padx=20)
+        options_frame.grid(row=5, column=0, pady=(0, 20), sticky="ew", padx=20)
         options_frame.grid_columnconfigure((0, 1), weight=1)
         
         # Format Selection
@@ -165,7 +243,7 @@ class DownloaderApp(ctk.CTk):
         
         # Download Path
         path_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        path_frame.grid(row=5, column=0, pady=(0, 20), sticky="ew", padx=20)
+        path_frame.grid(row=6, column=0, pady=(0, 20), sticky="ew", padx=20)
         path_frame.grid_columnconfigure(0, weight=1)
         
         path_label = ctk.CTkLabel(
@@ -200,7 +278,7 @@ class DownloaderApp(ctk.CTk):
 
         # Extra Options Frame
         extra_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        extra_frame.grid(row=6, column=0, pady=(0, 10), sticky="ew", padx=20)
+        extra_frame.grid(row=7, column=0, pady=(0, 10), sticky="ew", padx=20)
         extra_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
         # Subtitles checkbox + language
@@ -239,7 +317,7 @@ class DownloaderApp(ctk.CTk):
         
         # Progress Section
         self.progress_frame = ctk.CTkFrame(main_frame)
-        self.progress_frame.grid(row=7, column=0, pady=(0, 20), sticky="ew", padx=20)
+        self.progress_frame.grid(row=8, column=0, pady=(0, 20), sticky="ew", padx=20)
         self.progress_frame.grid_columnconfigure(0, weight=1)
         
         self.status_label = ctk.CTkLabel(
@@ -264,17 +342,18 @@ class DownloaderApp(ctk.CTk):
         )
         self.progress_label.grid(row=2, column=0, pady=(0, 15), sticky="w", padx=15)
         
-        # Download Button
+        # Download Button (hidden until search completes)
         self.download_btn = ctk.CTkButton(
             main_frame,
             text="Start Download",
-            height=50,
-            font=ctk.CTkFont(size=16, weight="bold"),
+            height=40,
+            font=ctk.CTkFont(size=15, weight="bold"),
             command=self.start_download,
             fg_color=ACCENT_COLOR,
             hover_color=HOVER_COLOR
         )
-        self.download_btn.grid(row=7, column=0, pady=(0, 20), sticky="ew", padx=20)
+        self.download_btn.grid(row=9, column=0, pady=(0, 15), sticky="ew", padx=20)
+        self.download_btn.grid_remove()  # Hide initially
 
         # About Button
         about_btn = ctk.CTkButton(
@@ -286,13 +365,142 @@ class DownloaderApp(ctk.CTk):
             fg_color=ACCENT_COLOR,
             hover_color=HOVER_COLOR
         )
-        about_btn.grid(row=8, column=0, pady=(0, 10), sticky="e", padx=20)
+        about_btn.grid(row=10, column=0, pady=(0, 10), sticky="e", padx=20)
         
     def browse_folder(self):
         folder = filedialog.askdirectory(initialdir=self.download_path)
         if folder:
             self.download_path = folder
             self.path_label.configure(text=folder)
+    
+    def search_url(self):
+        """Initiate URL search to fetch media info"""
+        if self.is_searching or self.is_downloading:
+            messagebox.showwarning("Busy", "Please wait for the current operation to finish.")
+            return
+        
+        # Get first URL from textbox
+        text = self.url_text.get("0.0", "end").strip()
+        if getattr(self, 'url_placeholder_active', False) or not text:
+            messagebox.showwarning("No URL", "Please enter a URL first!")
+            return
+        
+        # Get first non-empty URL
+        first_url = None
+        for line in text.splitlines():
+            line = line.strip()
+            if line:
+                first_url = line
+                break
+        
+        if not first_url or not first_url.startswith("http"):
+            messagebox.showwarning("Invalid URL", "Please enter a valid URL starting with http:// or https://")
+            return
+        
+        # Start search in background
+        self.is_searching = True
+        self.search_btn.configure(text="⏳ Searching...", state="disabled")
+        self.status_label.configure(text="Fetching media information...")
+        
+        thread = threading.Thread(target=self.search_url_thread, args=(first_url,))
+        thread.daemon = True
+        thread.start()
+    
+    def search_url_thread(self, url):
+        """Background thread to fetch media info"""
+        try:
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'skip_download': True,
+                'extract_flat': False,
+            }
+            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                
+                if info:
+                    # Store media info
+                    self.current_media_info = info
+                    
+                    # Update UI on main thread
+                    self.after(0, lambda: self.show_preview(info))
+                else:
+                    self.after(0, lambda: self._search_failed("Could not fetch media information"))
+                    
+        except Exception as e:
+            error_msg = str(e)
+            self.after(0, lambda: self._search_failed(error_msg))
+    
+    def _search_failed(self, error_msg):
+        """Handle search failure"""
+        self.is_searching = False
+        self.search_btn.configure(text="🔍 Search", state="normal")
+        self.status_label.configure(text="Search failed")
+        messagebox.showerror("Search Failed", f"Could not fetch media info:\\n{error_msg}")
+    
+    def show_preview(self, info):
+        """Display media preview with thumbnail and metadata"""
+        try:
+            # Extract info
+            title = info.get('title', 'Unknown Title')
+            duration = info.get('duration', 0)
+            uploader = info.get('uploader', 'Unknown')
+            view_count = info.get('view_count', 0)
+            thumbnail_url = info.get('thumbnail', '')
+            
+            # Format duration
+            if duration:
+                minutes = int(duration // 60)
+                seconds = int(duration % 60)
+                duration_str = f"⏱️ Duration: {minutes}:{seconds:02d}"
+            else:
+                duration_str = "⏱️ Duration: N/A"
+            
+            # Format view count
+            if view_count:
+                if view_count >= 1_000_000:
+                    views_str = f"👁️ Views: {view_count / 1_000_000:.1f}M"
+                elif view_count >= 1_000:
+                    views_str = f"👁️ Views: {view_count / 1_000:.1f}K"
+                else:
+                    views_str = f"👁️ Views: {view_count:,}"
+            else:
+                views_str = "👁️ Views: N/A"
+            
+            # Update labels
+            self.title_label.configure(text=title)
+            self.duration_label.configure(text=duration_str)
+            self.uploader_label.configure(text=f"📤 Uploader: {uploader}")
+            self.views_label.configure(text=views_str)
+            
+            # Try to fetch and display thumbnail
+            if thumbnail_url:
+                try:
+                    with urllib.request.urlopen(thumbnail_url, timeout=5) as response:
+                        img_data = response.read()
+                        img = Image.open(io.BytesIO(img_data))
+                        img = img.resize((160, 90), Image.Resampling.LANCZOS)
+                        photo = ctk.CTkImage(light_image=img, dark_image=img, size=(160, 90))
+                        self.thumbnail_label.configure(image=photo, text="")
+                        self.thumbnail_label.image = photo  # Keep reference
+                except Exception:
+                    self.thumbnail_label.configure(text="🖼️\nNo Preview", font=ctk.CTkFont(size=12))
+            else:
+                self.thumbnail_label.configure(text="🖼️\nNo Preview", font=ctk.CTkFont(size=12))
+            
+            # Show preview panel and download button
+            self.preview_frame.grid()
+            self.download_btn.grid()
+            self.preview_visible = True
+            
+            # Reset search button
+            self.is_searching = False
+            self.search_btn.configure(text="🔍 Search", state="normal")
+            self.status_label.configure(text="Ready to download")
+            
+        except Exception as e:
+            self._search_failed(f"Error displaying preview: {str(e)}")
             
     def show_about(self):
         """Show About dialog with app name and version"""
